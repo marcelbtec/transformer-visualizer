@@ -606,9 +606,10 @@ const TechnicalTransformerVisualizer = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-          🔬 Technical Transformer Architecture
-        </h1>
+      
+      <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-[#69f8fa] to-[#ffb5f1] bg-clip-text text-transparent">
+  🔬 Technical Transformer Architecture
+</h1>
         <p className="text-center text-gray-400 mb-12 text-lg">
           Deep dive into the mathematical foundations of transformer models
         </p>

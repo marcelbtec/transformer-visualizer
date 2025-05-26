@@ -23,3 +23,9 @@ body {
   background-color: #000000;
   color: #ffffff;
 }
+.brand-gradient-text {
+  background: linear-gradient(to right, #69f8fa, #ffb5f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
