@@ -1,15 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Grid, Brain, Target, Zap, ArrowRight, Hash, Eye } from 'lucide-react';
 
 const TechnicalTransformerVisualizer = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userInput, setUserInput] = useState("The cat sat on the mat");
   const [isCustomInput, setIsCustomInput] = useState(false);
-
-  // Memoize the input handler to prevent unnecessary re-renders
-  const handleInputChange = useCallback((e) => {
-    setUserInput(e.target.value);
-  }, []);
 
   // Helper function to process any user input
   const processUserInput = (text) => {
@@ -143,7 +138,7 @@ const TechnicalTransformerVisualizer = () => {
             <label className="block text-gray-400 mb-2 text-sm">Enter your text to analyze:</label>
             <textarea
               value={userInput}
-              onChange={handleInputChange}
+              onChange={(e) => setUserInput(e.target.value)}
               placeholder="Type your sentence here..."
               className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none resize-none"
               rows={3}
