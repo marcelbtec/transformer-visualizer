@@ -144,6 +144,8 @@ const TechnicalTransformerVisualizer = () => {
               rows={3}
               maxLength={200}
               autoFocus
+              dir="ltr"
+              style={{ direction: 'ltr' }}
             />
             <div className="text-right text-gray-500 text-xs mt-1">
               {userInput.length}/200 characters
