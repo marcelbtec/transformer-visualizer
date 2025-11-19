@@ -121,7 +121,7 @@ const TechnicalTransformerVisualizer = () => {
     }
   ];
 
-  const InputTextView = useMemo(() => () => (
+  const InputTextView = () => (
     <div className="space-y-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
@@ -224,7 +224,7 @@ const TechnicalTransformerVisualizer = () => {
         </div>
       )}
     </div>
-  ), [userInput, isCustomInput, handleInputChange]);
+  );
 
   const TokenizationView = () => (
     <div className="space-y-8">
