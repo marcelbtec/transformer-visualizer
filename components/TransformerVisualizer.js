@@ -3,19 +3,47 @@ import { Grid, Brain, Target, Zap, ArrowRight, Hash, Eye } from 'lucide-react';
 
 const TechnicalTransformerVisualizer = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [userInput, setUserInput] = useState("The cat sat on the mat");
+  const [isCustomInput, setIsCustomInput] = useState(false);
 
-  // Real example data
-  const inputText = "The cat sat on the mat";
-  const tokens = ["[CLS]", "The", "cat", "sat", "on", "the", "mat", "[SEP]"];
-  const tokenIds = [101, 1996, 4937, 2938, 2006, 1996, 13523, 102];
+  // Helper function to process any user input
+  const processUserInput = (text) => {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const tokens = ['[CLS]', ...words, '[SEP]'];
+    
+    // Add padding if needed (limit to 8 for visualization)
+    while (tokens.length < 8) {
+      tokens.push('[PAD]');
+    }
+    
+    return tokens.slice(0, 8);
+  };
+
+  // Dynamic data based on user input
+  const tokens = useMemo(() => processUserInput(userInput), [userInput]);
+  
+  const tokenIds = useMemo(() => 
+    tokens.map((token, i) => {
+      if (token === '[CLS]') return 101;
+      if (token === '[SEP]') return 102;
+      if (token === '[PAD]') return 0;
+      if (token === '[UNK]') return 100;
+      // Generate realistic token IDs for words
+      return 1000 + token.length * 100 + i;
+    }), [tokens]
+  );
   
   // Generate realistic embeddings (simplified to 8D for visualization)
   const embeddings = useMemo(() => 
-    tokens.map((_, i) => 
-      Array.from({length: 8}, (_, j) => 
-        Math.sin((i + 1) * (j + 1) * 0.5) * (Math.random() * 0.4 + 0.8)
-      )
-    ), []
+    tokens.map((token, i) => 
+      Array.from({length: 8}, (_, j) => {
+        // Different patterns for different token types
+        if (token.startsWith('[')) {
+          return Math.sin((i + 1) * (j + 1) * 0.3) * 0.5;
+        }
+        return Math.sin((i + 1) * (j + 1) * 0.5) * (Math.random() * 0.4 + 0.8);
+      })
+    ), [tokens]
   );
 
   // Positional encodings using actual transformer formula
@@ -25,25 +53,35 @@ const TechnicalTransformerVisualizer = () => {
         const angle = pos / Math.pow(10000, (2 * Math.floor(i/2)) / 8);
         return i % 2 === 0 ? Math.sin(angle) : Math.cos(angle);
       })
-    ), []
+    ), [tokens]
   );
 
   // Attention weights matrix
   const attentionWeights = useMemo(() => 
     tokens.map((_, i) => 
-      tokens.map((_, j) => {
+      tokens.map((token, j) => {
         // Simulate realistic attention patterns
         let weight = Math.exp(-Math.abs(i - j) * 0.3); // Distance decay
-        if (tokens[j] === "[CLS]" || tokens[j] === "[SEP]") weight *= 1.5;
-        if (tokens[i] === "cat" && tokens[j] === "sat") weight *= 2;
-        if (tokens[i] === "sat" && tokens[j] === "mat") weight *= 1.8;
+        if (token === "[CLS]" || token === "[SEP]") weight *= 1.5;
+        if (token === "[PAD]") weight *= 0.1;
+        // Add some semantic relationships
+        if (i > 0 && j > 0 && tokens[i].length === tokens[j].length) weight *= 1.2;
         return weight + Math.random() * 0.1;
       })
     ).map(row => {
       const sum = row.reduce((a, b) => a + b, 0);
       return row.map(w => w / sum); // Normalize to sum to 1
-    }), []
+    }), [tokens]
   );
+
+  // Example texts for quick selection
+  const exampleTexts = [
+    "The cat sat on the mat",
+    "Artificial intelligence transforms education",
+    "Machine learning enables pattern recognition",
+    "Natural language processing understands text",
+    "Deep neural networks learn complex patterns"
+  ];
 
   const steps = [
     { 
@@ -80,38 +118,105 @@ const TechnicalTransformerVisualizer = () => {
 
   const InputTextView = () => (
     <div className="space-y-8">
-      <div className="text-center">
-        <div className="text-4xl font-mono text-cyan-400 bg-gray-900 p-8 rounded-xl border border-cyan-500/30 shadow-lg shadow-cyan-500/20">
-          "{inputText}"
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Hash className="text-cyan-400" size={24} />
+          <h2 className="text-2xl font-bold text-cyan-400">Input Text</h2>
         </div>
+        <button
+          onClick={() => setIsCustomInput(!isCustomInput)}
+          className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg text-purple-300 hover:border-purple-400 transition-all"
+        >
+          {isCustomInput ? 'Use Example' : 'Enter Custom Text'}
+        </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-300">
-        <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-3">Input Characteristics</h3>
-          <div className="space-y-2 font-mono text-sm">
-            <div>Length: {inputText.length} characters</div>
-            <div>Words: {inputText.split(' ').length}</div>
-            <div>Type: Natural language text</div>
+      
+      {isCustomInput ? (
+        // Custom Input Mode
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-400 mb-2 text-sm">Enter your text to analyze:</label>
+            <textarea
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="Type your sentence here..."
+              className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none resize-none"
+              rows={3}
+              maxLength={200}
+            />
+            <div className="text-right text-gray-500 text-xs mt-1">
+              {userInput.length}/200 characters
+            </div>
+          </div>
+          
+          {/* Quick Examples */}
+          <div>
+            <label className="block text-gray-400 mb-2 text-sm">Or try these examples:</label>
+            <div className="flex flex-wrap gap-2">
+              {exampleTexts.map((text, index) => (
+                <button
+                  key={index}
+                  onClick={() => setUserInput(text)}
+                  className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded-full text-gray-300 transition-colors"
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              if (userInput.trim()) {
+                setIsCustomInput(false);
+                setCurrentStep(0);
+              }
+            }}
+            disabled={!userInput.trim()}
+            className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg text-white font-medium hover:from-cyan-400 hover:to-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Analyze This Text
+          </button>
+        </div>
+      ) : (
+        // Display Mode
+        <div>
+          <div className="text-center">
+            <div className="text-3xl font-mono text-cyan-300 mb-4 p-4 bg-gray-800/50 rounded-lg border border-cyan-500/20">
+              "{userInput}"
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-gray-800/30 p-4 rounded-xl border border-gray-700">
+              <h3 className="text-cyan-400 font-semibold mb-3">Input Characteristics</h3>
+              <div className="space-y-2 font-mono text-sm">
+                <div className="text-gray-300">Length: <span className="text-cyan-400">{userInput.length} characters</span></div>
+                <div className="text-gray-300">Words: <span className="text-cyan-400">{userInput.trim().split(/\s+/).filter(w => w.length > 0).length}</span></div>
+                <div className="text-gray-300">Type: <span className="text-cyan-400">Natural language text</span></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800/30 p-4 rounded-xl border border-gray-700">
+              <h3 className="text-cyan-400 font-semibold mb-3">Processing Pipeline</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-gray-300">Tokenization</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-gray-300">Embedding Lookup</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-gray-300">Position Encoding</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-3">Processing Pipeline</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-              <span>Tokenization</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-              <span>Embedding Lookup</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span>Position Encoding</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 
@@ -377,14 +482,16 @@ const TechnicalTransformerVisualizer = () => {
               <div></div>
               {tokens.map((token, i) => (
                 <div key={i} className="text-xs text-center text-orange-400 p-1 font-mono">
-                  {token}
+                  {token.length > 6 ? token.substring(0, 6) + '...' : token}
                 </div>
               ))}
               
               {/* Attention weights */}
               {attentionWeights.map((row, i) => (
                 <React.Fragment key={i}>
-                  <div className="text-xs text-orange-400 p-1 font-mono">{tokens[i]}</div>
+                  <div className="text-xs text-orange-400 p-1 font-mono">
+                    {tokens[i].length > 6 ? tokens[i].substring(0, 6) + '...' : tokens[i]}
+                  </div>
                   {row.map((weight, j) => (
                     <div
                       key={j}
@@ -442,7 +549,7 @@ const TechnicalTransformerVisualizer = () => {
               {[...Array(8)].map((_, head) => (
                 <div key={head} className="space-y-2">
                   <div className="text-sm text-gray-400">Head {head + 1}</div>
-                  <div className="grid grid-cols-8 gap-1">
+                  <div className="grid gap-1" style={{gridTemplateColumns: `repeat(${tokens.length}, 1fr)`}}>
                     {tokens.map((_, i) => (
                       <div
                         key={i}
@@ -607,9 +714,9 @@ const TechnicalTransformerVisualizer = () => {
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto p-6">
       
-      <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-[#69f8fa] to-[#ffb5f1] bg-clip-text text-transparent">
-  🔬 Technical Transformer Architecture
-</h1>
+        <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-[#69f8fa] to-[#ffb5f1] bg-clip-text text-transparent">
+          🔬 Technical Transformer Architecture
+        </h1>
         <p className="text-center text-gray-400 mb-12 text-lg">
           Deep dive into the mathematical foundations of transformer models
         </p>
