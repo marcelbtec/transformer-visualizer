@@ -1,10 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Grid, Brain, Target, Zap, ArrowRight, Hash, Eye } from 'lucide-react';
 
 const TechnicalTransformerVisualizer = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userInput, setUserInput] = useState("The cat sat on the mat");
   const [isCustomInput, setIsCustomInput] = useState(false);
+
+  // Memoize the input handler to prevent unnecessary re-renders
+  const handleInputChange = useCallback((e) => {
+    setUserInput(e.target.value);
+  }, []);
 
   // Helper function to process any user input
   const processUserInput = (text) => {
@@ -116,7 +121,7 @@ const TechnicalTransformerVisualizer = () => {
     }
   ];
 
-  const InputTextView = () => (
+  const InputTextView = useMemo(() => () => (
     <div className="space-y-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
@@ -138,11 +143,12 @@ const TechnicalTransformerVisualizer = () => {
             <label className="block text-gray-400 mb-2 text-sm">Enter your text to analyze:</label>
             <textarea
               value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
+              onChange={handleInputChange}
               placeholder="Type your sentence here..."
               className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none resize-none"
               rows={3}
               maxLength={200}
+              autoFocus
             />
             <div className="text-right text-gray-500 text-xs mt-1">
               {userInput.length}/200 characters
@@ -218,7 +224,7 @@ const TechnicalTransformerVisualizer = () => {
         </div>
       )}
     </div>
-  );
+  ), [userInput, isCustomInput, handleInputChange]);
 
   const TokenizationView = () => (
     <div className="space-y-8">
