@@ -6,30 +6,133 @@ const TechnicalTransformerVisualizer = () => {
   const [userInput, setUserInput] = useState("The cat sat on the mat");
   const [isCustomInput, setIsCustomInput] = useState(false);
 
-  // Helper function to process any user input
+  // Mock vocabulary for subword tokenization (simplified BERT-like vocab)
+  const mockVocabulary = {
+    // Special tokens
+    '[CLS]': 101,
+    '[SEP]': 102,
+    '[PAD]': 0,
+    '[UNK]': 100,
+    '[MASK]': 103,
+    
+    // Common words
+    'the': 1996, 'a': 1037, 'an': 2019, 'is': 2003, 'was': 2001, 'are': 2024, 'were': 2020,
+    'be': 2022, 'been': 2042, 'being': 2108, 'have': 2031, 'has': 2038, 'had': 2018,
+    'do': 2079, 'does': 2515, 'did': 2106, 'will': 2097, 'would': 2052, 'should': 2323,
+    'could': 2071, 'can': 2064, 'may': 2089, 'might': 2453, 'must': 2442, 'shall': 3115,
+    'to': 2000, 'of': 1997, 'in': 1999, 'for': 2005, 'on': 2006, 'with': 2007,
+    'at': 2012, 'by': 2011, 'from': 2013, 'up': 2039, 'about': 2055, 'into': 2046,
+    'through': 2083, 'over': 2058, 'under': 2104, 'again': 2153, 'between': 2090,
+    'out': 2041, 'off': 2125, 'down': 2091, 'away': 2185, 'back': 2067, 'around': 2105,
+    'and': 1998, 'or': 2030, 'but': 2021, 'if': 2065, 'then': 2059, 'than': 2084,
+    'so': 2061, 'as': 2004, 'because': 2107, 'when': 2043, 'where': 2073, 'while': 2096,
+    'he': 2002, 'she': 2016, 'it': 2009, 'they': 2027, 'we': 2057, 'you': 2017,
+    'his': 2010, 'her': 2014, 'its': 2049, 'their': 2037, 'our': 2256, 'your': 2115,
+    'cat': 4937, 'dog': 3899, 'sat': 2938, 'mat': 13523, 'hello': 7592, 'world': 2088,
+    'machine': 3698, 'learning': 4083, 'neural': 15756, 'network': 2897, 'networks': 7681,
+    'artificial': 7976, 'intelligence': 4454, 'deep': 2784, 'pattern': 4766, 'patterns': 7060,
+    'natural': 3019, 'language': 2653, 'processing': 6364, 'understand': 3305, 'understands': 9234,
+    'transformer': 19081, 'transforms': 21743, 'attention': 3086, 'model': 2944, 'models': 4275,
+    'text': 3793, 'word': 2773, 'words': 2616, 'token': 19204, 'tokens': 19207, 'enable': 9585,
+    'enables': 13265, 'complex': 3177, 'simple': 3722, 'very': 2200, 'long': 2146, 'short': 2460,
+    'new': 2047, 'old': 2214, 'good': 2204, 'bad': 2919, 'great': 2307, 'small': 2235,
+    'big': 2502, 'large': 2312, 'tiny': 4714, 'huge': 4121, 'fast': 3435, 'slow': 3105,
+    'quick': 4248, 'high': 2152, 'low': 2659, 'data': 2951, 'science': 2671, 'computer': 3274,
+    'system': 2291, 'systems': 3001, 'software': 4007, 'hardware': 8296, 'algorithm': 9896,
+    'algorithms': 14137, 'code': 3089, 'program': 2565, 'function': 3853, 'method': 4118,
+    'class': 2465, 'object': 4231, 'array': 9140, 'list': 2862, 'set': 2275, 'map': 4949,
+    
+    // Common prefixes/suffixes as subwords
+    '##ing': 2483, '##ed': 2098, '##er': 2121, '##est': 3367, '##ly': 2135, '##tion': 2475,
+    '##ment': 3672, '##ness': 4757, '##able': 3085, '##ful': 3993, '##less': 3238, '##ize': 4697,
+    '##s': 2015, '##n': 2078, '##t': 2102, '##d': 2094, '##m': 2213, '##l': 2140,
+    '##k': 2243, '##y': 2100, '##r': 2099, '##g': 2290, '##e': 2063, '##a': 2050,
+    'un##': 4895, 're##': 3960, 'pre##': 4099, 'dis##': 4487, 'over##': 4929, 'under##': 4116,
+    '##un': 4895, '##re': 3960, '##pre': 4099, '##dis': 4487, '##over': 4929, '##under': 4116,
+    
+    // Single characters for unknown word handling
+    'a': 1037, 'b': 1038, 'c': 1039, 'd': 1040, 'e': 1041, 'f': 1042, 'g': 1043,
+    'h': 1044, 'i': 1045, 'j': 1046, 'k': 1047, 'l': 1048, 'm': 1049, 'n': 1050,
+    'o': 1051, 'p': 1052, 'q': 1053, 'r': 1054, 's': 1055, 't': 1056, 'u': 1057,
+    'v': 1058, 'w': 1059, 'x': 1060, 'y': 1061, 'z': 1062
+  };
+
+  // Subword tokenization function (simplified WordPiece-like algorithm)
+  const tokenizeWord = (word) => {
+    const lowerWord = word.toLowerCase();
+    
+    // Check if whole word is in vocabulary
+    if (mockVocabulary[lowerWord]) {
+      return [word];
+    }
+    
+    // Try to break into subwords
+    const subwords = [];
+    let remainingWord = lowerWord;
+    let isFirstSubword = true;
+    
+    while (remainingWord.length > 0) {
+      let found = false;
+      
+      // Try longest possible subword first
+      for (let end = remainingWord.length; end > 0; end--) {
+        const subword = remainingWord.slice(0, end);
+        const subwordToken = isFirstSubword ? subword : '##' + subword;
+        
+        if (mockVocabulary[subwordToken] || (subword.length === 1 && mockVocabulary[subword])) {
+          subwords.push(isFirstSubword ? subword : '##' + subword);
+          remainingWord = remainingWord.slice(end);
+          isFirstSubword = false;
+          found = true;
+          break;
+        }
+      }
+      
+      // If no subword found, use [UNK] for the whole remaining part
+      if (!found) {
+        subwords.push('[UNK]');
+        break;
+      }
+    }
+    
+    return subwords.length > 0 ? subwords : ['[UNK]'];
+  };
+
+  // Helper function to process any user input with subword tokenization
   const processUserInput = (text) => {
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    const tokens = ['[CLS]', ...words, '[SEP]'];
+    const tokens = ['[CLS]'];
     
-    // Add padding if needed (limit to 8 for visualization)
-    while (tokens.length < 8) {
+    // Tokenize each word
+    words.forEach(word => {
+      const subwords = tokenizeWord(word);
+      tokens.push(...subwords);
+    });
+    
+    tokens.push('[SEP]');
+    
+    // Add padding if needed (limit to 12 for visualization with subwords)
+    while (tokens.length < 12) {
       tokens.push('[PAD]');
     }
     
-    return tokens.slice(0, 8);
+    return tokens.slice(0, 12);
   };
 
   // Dynamic data based on user input
   const tokens = useMemo(() => processUserInput(userInput), [userInput]);
   
   const tokenIds = useMemo(() => 
-    tokens.map((token, i) => {
-      if (token === '[CLS]') return 101;
-      if (token === '[SEP]') return 102;
-      if (token === '[PAD]') return 0;
-      if (token === '[UNK]') return 100;
-      // Generate realistic token IDs for words
-      return 1000 + token.length * 100 + i;
+    tokens.map((token) => {
+      const lowerToken = token.toLowerCase();
+      // Look up token ID in vocabulary
+      if (mockVocabulary[token]) {
+        return mockVocabulary[token];
+      } else if (mockVocabulary[lowerToken]) {
+        return mockVocabulary[lowerToken];
+      }
+      // For subwords not in vocab, generate a pseudo ID
+      return 9000 + token.charCodeAt(0);
     }), [tokens]
   );
   
@@ -136,16 +239,34 @@ const TechnicalTransformerVisualizer = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-gray-400 mb-2 text-sm">Enter your text to analyze:</label>
-            <textarea
+            {/* Debug: Display current input value */}
+            <div className="mb-2 p-2 bg-gray-700 rounded text-cyan-300 text-sm">
+              Current value: "{userInput}"
+            </div>
+            <input
+              type="text"
               value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                console.log('Input value:', newValue);
+                console.log('Current state:', userInput);
+                setUserInput(newValue);
+              }}
+              onKeyDown={(e) => {
+                console.log('Key pressed:', e.key);
+              }}
               placeholder="Type your sentence here..."
-              className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none resize-none"
-              rows={3}
+              className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none"
               maxLength={200}
               autoFocus
               dir="ltr"
-              style={{ direction: 'ltr' }}
+              style={{ 
+                direction: 'ltr',
+                textAlign: 'left',
+                unicodeBidi: 'normal',
+                writingMode: 'horizontal-tb',
+                transform: 'scaleX(1)'
+              }}
             />
             <div className="text-right text-gray-500 text-xs mt-1">
               {userInput.length}/200 characters
@@ -239,14 +360,20 @@ const TechnicalTransformerVisualizer = () => {
             {tokens.map((token, i) => (
               <tr key={i} className="border-b border-gray-800 hover:bg-gray-900/50">
                 <td className="p-3">
-                  <span className="bg-gradient-to-r from-cyan-500 to-blue-500 text-black px-3 py-1 rounded font-bold">
+                  <span className={`px-3 py-1 rounded font-bold ${
+                    token.includes('[') 
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : token.startsWith('##')
+                      ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-black'
+                  }`}>
                     {token}
                   </span>
                 </td>
                 <td className="p-3 text-gray-300">{tokenIds[i]}</td>
                 <td className="p-3 text-gray-300">{i}</td>
                 <td className="p-3 text-gray-400">
-                  {token.includes('[') ? 'Special' : 'Word'}
+                  {token.includes('[') ? 'Special' : token.startsWith('##') ? 'Subword' : 'Word'}
                 </td>
               </tr>
             ))}
@@ -258,18 +385,36 @@ const TechnicalTransformerVisualizer = () => {
         <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
           <h3 className="text-lg font-semibold text-cyan-400 mb-3">Tokenization Details</h3>
           <div className="space-y-2 text-sm text-gray-300">
-            <div><span className="text-cyan-400">Algorithm:</span> WordPiece/BPE</div>
-            <div><span className="text-cyan-400">Vocab Size:</span> 30,522 tokens</div>
+            <div><span className="text-cyan-400">Algorithm:</span> WordPiece (Subword Tokenization)</div>
+            <div><span className="text-cyan-400">Vocab Size:</span> 30,522 tokens (BERT)</div>
             <div><span className="text-cyan-400">Special Tokens:</span> [CLS], [SEP], [PAD], [UNK]</div>
-            <div><span className="text-cyan-400">Max Length:</span> 512 tokens</div>
+            <div><span className="text-cyan-400">Subword Prefix:</span> ## (indicates continuation)</div>
+          </div>
+          <div className="mt-3 p-3 bg-gray-800 rounded text-xs">
+            <div className="text-purple-400 mb-1">Color Legend:</div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded"></span>
+                Special tokens
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded"></span>
+                Whole words
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-gradient-to-r from-orange-500 to-yellow-500 rounded"></span>
+                Subwords
+              </span>
+            </div>
           </div>
         </div>
         <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
           <h3 className="text-lg font-semibold text-cyan-400 mb-3">Token Statistics</h3>
           <div className="space-y-2 text-sm text-gray-300">
-            <div><span className="text-cyan-400">Total Tokens:</span> {tokens.length}</div>
-            <div><span className="text-cyan-400">Content Tokens:</span> {tokens.filter(t => !t.includes('[')).length}</div>
-            <div><span className="text-cyan-400">Special Tokens:</span> {tokens.filter(t => t.includes('[')).length}</div>
+            <div><span className="text-cyan-400">Total Tokens:</span> {tokens.filter(t => t !== '[PAD]').length} (+ {tokens.filter(t => t === '[PAD]').length} padding)</div>
+            <div><span className="text-cyan-400">Whole Words:</span> {tokens.filter(t => !t.includes('[') && !t.startsWith('##')).length}</div>
+            <div><span className="text-cyan-400">Subwords:</span> {tokens.filter(t => t.startsWith('##')).length}</div>
+            <div><span className="text-cyan-400">Special Tokens:</span> {tokens.filter(t => t.includes('[') && t !== '[PAD]').length}</div>
           </div>
         </div>
       </div>

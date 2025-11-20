@@ -23,6 +23,20 @@ body {
   background-color: #000000;
   color: #ffffff;
 }
+
+/* Ensure all text inputs and textareas have proper text direction */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
+  -webkit-transform: scaleX(1) !important;
+  transform: scaleX(1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 .brand-gradient-text {
   background: linear-gradient(to right, #69f8fa, #ffb5f1);
   -webkit-background-clip: text;

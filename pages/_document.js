@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html lang="en">
+    <Html lang="en" dir="ltr">
       <Head>
         <meta name="description" content="Interactive technical visualizer for transformer architecture components - tokenization, embeddings, attention, and more" />
         <meta name="keywords" content="transformer, attention mechanism, machine learning, neural networks, visualization, education" />
